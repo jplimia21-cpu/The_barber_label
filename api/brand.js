@@ -20,7 +20,7 @@ module.exports=async function handler(req,res){
  const brand=String(body?.brand||'').trim(),vibe=String(body?.vibe||'').trim();
  if(brand.length<2||brand.length>50||vibe.length<5||vibe.length>300)return res.status(400).json({error:'Please enter a brand name and a creative direction (5–300 characters).'});
  const prompt='You are a high-end visual identity creative director for a Miami barber styling-gel brand. Produce exactly 3 DIFFERENT logo directions as JSON. Interpret the user brief semantically; do not merely change the color. Each direction should use a distinct symbol and design approach. Symbols MUST be one of wave, sun, leaf, lines, star, monogram (these are the supported vector motifs). Names must be short creative direction names, not the brand name. Colors must be six-digit hex colors with good contrast. Use accessible luxury editorial design. No trademarks, copyrighted logos, or claims of exclusive rights. Return JSON ONLY as {"concepts":[{"name":"...","symbol":"wave","bg":"#123456","fg":"#FFFFFF","accent":"#AABBCC","font":"serif","rationale":"One short sentence"}]} with exactly 3 objects. Brand: '+brand+'. Creative brief: '+vibe;
- const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),22000);
+ const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),27000);
  try{
  const preferred=process.env.GEMINI_MODEL||'';
  const listResponse=await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=100',{headers:{'x-goog-api-key':key},signal:controller.signal});
@@ -46,11 +46,11 @@ module.exports=async function handler(req,res){
   lastStatus=response.status;
   let detail={};try{detail=await response.json()}catch{}
   lastCode=String(detail?.error?.status||'').slice(0,40);
-  if(lastStatus!==404)break;
+  if(![404,502,503].includes(lastStatus))break;
  }
  if(!response.ok){
  const status=lastStatus,code=lastCode;
- const message=status===400?'Gemini rejected the request (400): model or request settings.':status===401||status===403?'Gemini access denied ('+status+'): check API key and project restrictions.':status===404?'Gemini models returned 404 after trying '+attempted.join(', ')+'.':status===429?'Gemini quota reached (429): free-tier usage may not be available.':status>=500?'Gemini server error ('+status+').':'Gemini HTTP error '+status+'.';
+ const message=status===400?'Gemini rejected the request (400): model or request settings.':status===401||status===403?'Gemini access denied ('+status+'): check API key and project restrictions.':status===404?'Gemini models returned 404 after trying '+attempted.join(', ')+'.':status===429?'Gemini quota reached (429): free-tier usage may not be available.':status>=500?'Gemini service temporarily unavailable ('+status+'); attempted '+attempted.join(', ')+'.':'Gemini HTTP error '+status+'.';
  return res.status(status===429?429:502).json({error:message+(code?' ['+code+']':'')});
  }
  const data=await response.json();const raw=data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('')||'';
