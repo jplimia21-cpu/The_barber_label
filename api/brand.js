@@ -20,12 +20,12 @@ module.exports=async function handler(req,res){
  const brand=String(body?.brand||'').trim(),vibe=String(body?.vibe||'').trim();
  if(brand.length<2||brand.length>50||vibe.length<5||vibe.length>300)return res.status(400).json({error:'Please enter a brand name and a creative direction (5–300 characters).'});
  const prompt='You are a high-end visual identity creative director for a Miami barber styling-gel brand. Produce exactly 3 DIFFERENT logo directions as JSON. Interpret the user brief semantically; do not merely change the color. Each direction should use a distinct symbol and design approach. Symbols MUST be one of wave, sun, leaf, lines, star, monogram (these are the supported vector motifs). Names must be short creative direction names, not the brand name. Colors must be six-digit hex colors with good contrast. Use accessible luxury editorial design. No trademarks, copyrighted logos, or claims of exclusive rights. Return JSON ONLY as {"concepts":[{"name":"...","symbol":"wave","bg":"#123456","fg":"#FFFFFF","accent":"#AABBCC","font":"serif","rationale":"One short sentence"}]} with exactly 3 objects. Brand: '+brand+'. Creative brief: '+vibe;
- const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),13000);
+ const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),22000);
  try{
  const model=process.env.GEMINI_MODEL||'gemini-2.5-flash-lite';
  const response=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{
  method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
- body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature:0.95,maxOutputTokens:1150}}),
+ body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature:0.8,maxOutputTokens:2400,thinkingConfig:{thinkingBudget:0}}}),
  signal:controller.signal
  });
  if(!response.ok){return res.status(response.status===429?429:502).json({error:response.status===429?'Free AI usage limit reached. Please try later.':'AI service is temporarily unavailable.'});}
