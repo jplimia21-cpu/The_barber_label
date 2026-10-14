@@ -64,6 +64,11 @@ const families=[
 let options=directions,chosen=directions[0];
 function initials(){return ($('brand').value.trim().split(/\s+/).map(w=>w[0]).filter(Boolean).slice(0,2).join('')||'BL').toUpperCase()}
 function mark(p){const c=p.accent;switch(p.symbol){
+case 'scissors':return '<g fill="none" stroke="'+c+'" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><circle cx="36" cy="100" r="17"/><circle cx="83" cy="100" r="17"/><path d="M47 88L111 17L65 77M72 88L21 17L76 76"/><circle cx="68" cy="77" r="4" fill="'+c+'"/></g>';
+case 'clippers':return '<g fill="none" stroke="'+c+'" stroke-width="5" stroke-linejoin="round"><rect x="44" y="38" width="52" height="75" rx="13"/><path d="M49 38V18H91V38M55 18V10M65 18V10M75 18V10M85 18V10M59 64H81M59 75H81M70 90V100"/></g>';
+case 'razor':return '<g fill="none" stroke="'+c+'" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 40H93L118 18V49L93 70H18Z"/><path d="M34 70L98 115M18 53H89"/></g>';
+case 'barberpole':return '<g fill="none" stroke="'+c+'" stroke-width="5"><rect x="45" y="19" width="50" height="95" rx="7"/><path d="M45 46L75 19M45 77L95 27M45 108L95 58M75 114L95 93"/><path d="M36 19H104M36 114H104" stroke-width="8"/></g>';
+case 'comb':return '<g fill="none" stroke="'+c+'" stroke-width="5" stroke-linecap="round"><path d="M18 48H122V69H18Z"/><path d="M26 69V107M36 69V107M46 69V107M56 69V107M66 69V107M76 69V107M86 69V107M96 69V107M106 69V107M116 69V107"/></g>';
 case 'wave':return '<path d="M12 65 Q37 15 63 65 T114 65" fill="none" stroke="'+c+'" stroke-width="9" stroke-linecap="round"/><path d="M18 85 Q46 55 75 85 T124 85" fill="none" stroke="'+c+'" stroke-width="5"/>';
 case 'sun':return '<circle cx="70" cy="57" r="24" fill="none" stroke="'+c+'" stroke-width="6"/><path d="M15 94H125M26 107H114" stroke="'+c+'" stroke-width="6"/>';
 case 'leaf':return '<path d="M35 98 Q10 30 103 20 Q120 99 35 98Z" fill="none" stroke="'+c+'" stroke-width="7"/><path d="M36 99L93 38" stroke="'+c+'" stroke-width="5"/>';
