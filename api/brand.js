@@ -22,10 +22,21 @@ module.exports=async function handler(req,res){
  const prompt='You are a high-end visual identity creative director for a Miami barber styling-gel brand. Produce exactly 3 DIFFERENT logo directions as JSON. Interpret the user brief semantically; do not merely change the color. Each direction should use a distinct symbol and design approach. Symbols MUST be one of wave, sun, leaf, lines, star, monogram (these are the supported vector motifs). Names must be short creative direction names, not the brand name. Colors must be six-digit hex colors with good contrast. Use accessible luxury editorial design. No trademarks, copyrighted logos, or claims of exclusive rights. Return JSON ONLY as {"concepts":[{"name":"...","symbol":"wave","bg":"#123456","fg":"#FFFFFF","accent":"#AABBCC","font":"serif","rationale":"One short sentence"}]} with exactly 3 objects. Brand: '+brand+'. Creative brief: '+vibe;
  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),22000);
  try{
- const model=process.env.GEMINI_MODEL||'gemini-2.5-flash';
+ const preferred=process.env.GEMINI_MODEL||'';
+ const listResponse=await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=100',{headers:{'x-goog-api-key':key},signal:controller.signal});
+ if(!listResponse.ok){
+  const status=listResponse.status;
+  return res.status(status===429?429:502).json({error:status===401||status===403?'Gemini API key is denied access ('+status+').':status===429?'Gemini free-tier quota exceeded (429).':'Unable to list available Gemini models (HTTP '+status+').'});
+ }
+ const listing=await listResponse.json();
+ const available=(listing.models||[]).filter(m=>Array.isArray(m.supportedGenerationMethods)&&m.supportedGenerationMethods.includes('generateContent'));
+ const names=available.map(m=>m.name.replace(/^models\//,''));
+ const preferredModels=[preferred,'gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-2.0-flash-lite'].filter(Boolean);
+ const model=preferredModels.find(n=>names.includes(n))||names.find(n=>/flash/i.test(n)&&!/image|live|audio|tts|embedding|preview/i.test(n))||names.find(n=>/gemini/i.test(n)&&!/image|live|audio|tts|embedding/i.test(n));
+ if(!model)return res.status(503).json({error:'Your Gemini API key has no compatible text-generation models available.'});
  const response=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{
  method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
- body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature:0.8,maxOutputTokens:2400,thinkingConfig:{thinkingBudget:0}}}),
+ body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature:0.8,maxOutputTokens:2400}}),
  signal:controller.signal
  });
  if(!response.ok){
