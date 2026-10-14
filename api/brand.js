@@ -28,7 +28,12 @@ module.exports=async function handler(req,res){
  body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature:0.8,maxOutputTokens:2400,thinkingConfig:{thinkingBudget:0}}}),
  signal:controller.signal
  });
- if(!response.ok){return res.status(response.status===429?429:502).json({error:response.status===429?'Free AI usage limit reached. Please try later.':'AI service is temporarily unavailable.'});}
+ if(!response.ok){
+ let detail={};try{detail=await response.json()}catch{}
+ const status=response.status,code=String(detail?.error?.status||'').slice(0,40);
+ const message=status===400?'Gemini rejected the request (400): model or request settings.':status===401||status===403?'Gemini access denied ('+status+'): check API key and project restrictions.':status===404?'Gemini model unavailable (404).':status===429?'Gemini quota reached (429): free-tier usage may not be available.':status>=500?'Gemini server error ('+status+').':'Gemini HTTP error '+status+'.';
+ return res.status(status===429?429:502).json({error:message+(code?' ['+code+']':'')});
+}
  const data=await response.json();const raw=data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('')||'';
  const parsed=JSON.parse(raw);const arr=parsed?.concepts;
  const symbols=new Set(['wave','sun','leaf','lines','star','monogram']);
@@ -36,6 +41,6 @@ module.exports=async function handler(req,res){
  if(!Array.isArray(arr)||arr.length!==3)throw Error('Invalid AI response');
  const concepts=arr.map(x=>{if(!symbols.has(x.symbol)||!hex(x.bg)||!hex(x.fg)||!hex(x.accent))throw Error('Invalid concept');return {name:String(x.name||'Concept').slice(0,45),symbol:x.symbol,bg:x.bg,fg:x.fg,accent:x.accent,font:x.font==='serif'?'Georgia,serif':'Arial,sans-serif',rationale:String(x.rationale||'').slice(0,180)}});
  return res.status(200).json({concepts,source:'gemini'});
- }catch(e){return res.status(502).json({error:e?.name==='AbortError'?'AI request timed out. Please try again.':'Could not generate concepts. Please try again.'});}
+ }catch(e){return res.status(502).json({error:e?.name==='AbortError'?'Gemini request timed out.':e instanceof SyntaxError?'Gemini returned invalid JSON.':'Gemini returned an unexpected result.'});}
  finally{clearTimeout(timer);}
 };
