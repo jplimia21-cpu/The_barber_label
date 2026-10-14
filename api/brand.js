@@ -19,7 +19,7 @@ module.exports=async function handler(req,res){
  if(typeof body==='string'){if(body.length>2500)return res.status(413).json({error:'Request too large'});try{body=JSON.parse(body)}catch{return res.status(400).json({error:'Invalid JSON'});}}
  const brand=String(body?.brand||'').trim(),vibe=String(body?.vibe||'').trim();
  if(brand.length<2||brand.length>50||vibe.length<5||vibe.length>300)return res.status(400).json({error:'Please enter a brand name and a creative direction (5–300 characters).'});
- const prompt='You are a high-end visual identity creative director for a Miami barber styling-gel brand. Produce exactly 3 DIFFERENT logo directions as JSON. Interpret the user brief semantically; do not merely change the color. Each direction should use a distinct symbol and design approach. Symbols MUST be one of wave, sun, leaf, lines, star, monogram (these are the supported vector motifs). Names must be short creative direction names, not the brand name. Colors must be six-digit hex colors with good contrast. Use accessible luxury editorial design. No trademarks, copyrighted logos, or claims of exclusive rights. Return JSON ONLY as {"concepts":[{"name":"...","symbol":"wave","bg":"#123456","fg":"#FFFFFF","accent":"#AABBCC","font":"serif","rationale":"One short sentence"}]} with exactly 3 objects. Brand: '+brand+'. Creative brief: '+vibe;
+ const prompt='You are a high-end visual identity creative director for a Miami barber styling-gel brand. Produce exactly 3 DIFFERENT logo directions as JSON. Interpret the user brief semantically; do not merely change the color. Each direction should use a distinct symbol and design approach. Symbols MUST be one of scissors, clippers, razor, barberpole, comb, wave, sun, leaf, lines, star, monogram. These symbols render as actual vector drawings. If the brief explicitly names a physical object such as scissors, clippers, razor, barber pole, or comb, EVERY concept MUST feature that exact symbol; vary the palette, typography and visual treatment instead. Never replace a requested object with a generic symbol. Names must be short creative direction names, not the brand name. Colors must be six-digit hex colors with good contrast. Use accessible luxury editorial design. No trademarks, copyrighted logos, or claims of exclusive rights. Return JSON ONLY as {"concepts":[{"name":"...","symbol":"wave","bg":"#123456","fg":"#FFFFFF","accent":"#AABBCC","font":"serif","rationale":"One short sentence"}]} with exactly 3 objects. Brand: '+brand+'. Creative brief: '+vibe;
  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),27000);
  try{
  const preferred=process.env.GEMINI_MODEL||'';
@@ -55,10 +55,11 @@ module.exports=async function handler(req,res){
  }
  const data=await response.json();const raw=data?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('')||'';
  const parsed=JSON.parse(raw);const arr=parsed?.concepts;
- const symbols=new Set(['wave','sun','leaf','lines','star','monogram']);
+ const symbols=new Set(['scissors','clippers','razor','barberpole','comb','wave','sun','leaf','lines','star','monogram']);
  const hex=x=>typeof x==='string'&&/^#[0-9a-fA-F]{6}$/.test(x);
  if(!Array.isArray(arr)||arr.length!==3)throw Error('Invalid AI response');
- const concepts=arr.map(x=>{if(!symbols.has(x.symbol)||!hex(x.bg)||!hex(x.fg)||!hex(x.accent))throw Error('Invalid concept');return {name:String(x.name||'Concept').slice(0,45),symbol:x.symbol,bg:x.bg,fg:x.fg,accent:x.accent,font:x.font==='serif'?'Georgia,serif':'Arial,sans-serif',rationale:String(x.rationale||'').slice(0,180)}});
+ const requested=/scissor|shear/i.test(vibe)?'scissors':/clipper|trimmer/i.test(vibe)?'clippers':/razor|straight blade/i.test(vibe)?'razor':/barber.?pole/i.test(vibe)?'barberpole':/comb/i.test(vibe)?'comb':null;
+ const concepts=arr.map(x=>{if(!symbols.has(x.symbol)||!hex(x.bg)||!hex(x.fg)||!hex(x.accent))throw Error('Invalid concept');return {name:String(x.name||'Concept').slice(0,45),symbol:requested||x.symbol,bg:x.bg,fg:x.fg,accent:x.accent,font:x.font==='serif'?'Georgia,serif':'Arial,sans-serif',rationale:String(x.rationale||'').slice(0,180)}});
  return res.status(200).json({concepts,source:'gemini',model});
  }catch(e){return res.status(502).json({error:e?.name==='AbortError'?'Gemini request timed out.':e instanceof SyntaxError?'Gemini returned invalid JSON.':'Gemini returned an unexpected result.'});}
  finally{clearTimeout(timer);}
