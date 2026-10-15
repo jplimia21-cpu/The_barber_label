@@ -1,3 +1,3 @@
-create table if not exists public.barber_interests (id uuid primary key default gen_random_uuid(), created_at timestamptz default now(), name text, shop text, email text, phone text, program text, product text, quantity integer, timeline text, notes text, logo_path text);
+create table if not exists public.barber_interests (id uuid primary key default gen_random_uuid(), created_at timestamptz default now(), name text not null, shop text not null, email text not null, phone text not null, program text not null, product text not null, quantity integer not null check (quantity >= 12), timeline text not null, notes text, logo_path text);
 alter table public.barber_interests enable row level security;
 insert into storage.buckets (id,name,public) values ('barber-logos','barber-logos',false) on conflict (id) do nothing;
